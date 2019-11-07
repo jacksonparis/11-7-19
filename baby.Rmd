@@ -1,0 +1,84 @@
+---
+title: "baby"
+author: "Jackson Kehoe"
+date: "11/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(babynames)
+library(tidyverse)
+```
+
+how many years?
+how many distinct names?
+```{r}
+n_years <- babynames %>%
+  distinct(year) %>%
+  nrow()
+
+n_names <- babynames %>%
+  distinct(name) %>%
+  nrow()
+
+common <- babynames %>%
+  group_by(name) %>%
+  summarise(sum = sum(n)) %>%
+  arrange(desc(sum))
+
+gender_diff <- babynames %>%
+  group_by(sex) %>%
+  summarize(sum = sum(n)) %>%
+  summarize(difference = diff(sum))
+
+howmany <- babynames %>%
+  group_by(sex) %>%
+  distinct(name) %>%
+  summarize(total = n())
+  
+```
+
+```{r}
+Eunice <- babynames %>%
+  filter(name == "Eunice") 
+  
+ggplot(Eunice, aes(x = year)) + geom_histogram()
+
+prop_eunice <- babynames %>%
+  filter(name == "Eunice") %>%
+  filter(sex == "F")
+
+  
+ggplot(prop_eunice, aes(y = prop, x = year)) + geom_point()
+```
+
+Names increasing/decreasing depending on gender simultaneously?
+
+```{r}
+all_males <- babynames %>%
+  filter(sex == "M") %>%
+  group_by(name) %>%
+  summarize(total = n()) %>%
+  filter(total == 138) %>%
+  pluck("name")
+```
+
+```{r}
+one_name <- babynames %>%
+  filter(name == "Eugene") %>%
+  filter(sex == "M")
+
+lm.obj <- lm(data = one_name, formula = prop ~ year)
+
+male_names <- babynames %>%
+  filter(name %in% all_males) %>%
+  group_by(name) %>%
+  nest() %>%
+  mutate(models = map(data, ~ lm(prop ~ year, data = .x))) %>%
+  mutate(slope = map_dbl(coefficients, ~pluck(.x, "year")))
+```
+
